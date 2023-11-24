@@ -28,10 +28,10 @@ namespace Microsoft.ML.Probabilistic.Tutorials
             }
 
             // Define counts
-            int numUsers = 50;
-            int numItems = 10;
+            int numUsers = 200;
+            int numItems = 200;
             int numTraits = 2;
-            Variable<int> numObservations = Variable.Observed(100).Named("numObservations");
+            Variable<int> numObservations = Variable.Observed(20000).Named("numObservations");
             int numLevels = 2;
 
             // Define ranges
@@ -144,6 +144,13 @@ namespace Microsoft.ML.Probabilistic.Tutorials
             userBiasPrior.ObservedValue = userBiasPosterior;
             itemBiasPrior.ObservedValue = itemBiasPosterior;
             userThresholdsPrior.ObservedValue = userThresholdsPosterior;
+            
+            Console.WriteLine("| learned parameters |");
+            Console.WriteLine("| ------------------ |");
+            for (int i = 0; i < 5; i++)
+            {   
+                Console.WriteLine("| {0}    {1} |", itemTraitsPosterior[i][0].GetMean().ToString("F"), itemTraitsPosterior[i][1].GetMean().ToString("F"));
+            }
 
             // Make a prediction
             numObservations.ObservedValue = 1;
@@ -214,6 +221,13 @@ namespace Microsoft.ML.Probabilistic.Tutorials
                 generatedUserData[observation] = user;
                 generatedItemData[observation] = item;
                 generatedRatingData[observation] = Util.ArrayInit(numLevels, l => noisyAffinity > noisyThresholds[l]);
+            }
+            
+            Console.WriteLine("| true parameters |");
+            Console.WriteLine("| --------------- |");
+            for (int i = 0; i < 5; i++)
+            {   
+                Console.WriteLine("| {0}    {1} |", itemTraits[i][0].ToString("F"), itemTraits[i][1].ToString("F"));
             }
 
             userData.ObservedValue = generatedUserData;
