@@ -19,6 +19,8 @@ namespace Microsoft.ML.Probabilistic.Tutorials
     {
         public void Run()
         {
+            Variable<bool> evidence = Variable.Bernoulli(0.5).Named("evidence");  
+            IfBlock block = Variable.If(evidence); 
             // This example requires EP
             InferenceEngine engine = new InferenceEngine();
             if (!(engine.Algorithm is Algorithms.ExpectationPropagation))
@@ -26,12 +28,14 @@ namespace Microsoft.ML.Probabilistic.Tutorials
                 Console.WriteLine("This example only runs with Expectation Propagation");
                 return;
             }
+            engine.Compiler.OptimiseInferenceCode = false;
 
             // Define counts
             int numUsers = 50;
             int numItems = 10;
             int numTraits = 2;
-            Variable<int> numObservations = Variable.Observed(100).Named("numObservations");
+            int numObs = 200;
+            Variable<int> numObservations = Variable.Observed(numObs).Named("numObservations");
             int numLevels = 2;
 
             // Define ranges
@@ -130,6 +134,8 @@ namespace Microsoft.ML.Probabilistic.Tutorials
             // as in Stern, Herbrich, Graepel paper.
             engine.Compiler.GivePriorityTo(typeof(GaussianProductOp_SHG09));
             engine.Compiler.ShowWarnings = true;
+            engine.Compiler.OptimiseInferenceCode = false;
+            block.CloseBlock();  
 
             // Run inference
             var userTraitsPosterior = engine.Infer<Gaussian[][]>(userTraits);
@@ -144,19 +150,12 @@ namespace Microsoft.ML.Probabilistic.Tutorials
             userBiasPrior.ObservedValue = userBiasPosterior;
             itemBiasPrior.ObservedValue = itemBiasPosterior;
             userThresholdsPrior.ObservedValue = userThresholdsPosterior;
-
-            // Make a prediction
-            numObservations.ObservedValue = 1;
-            userData.ObservedValue = new int[] { 5 };
-            itemData.ObservedValue = new int[] { 6 };
-            ratingData.ClearObservedValue();
-
-            Bernoulli[] predictedRating = engine.Infer<Bernoulli[][]>(ratingData)[0];
-            Console.WriteLine("Predicted rating:");
-            foreach (var rating in predictedRating)
-            {
-                Console.WriteLine(rating);
-            }
+            
+            double logEvidence = engine.Infer<Bernoulli>(evidence).LogOdds;  
+            double modelEvidence = System.Math.Exp(logEvidence);
+            double geo_mean = System.Math.Exp(logEvidence/numObs);
+            Console.WriteLine("\nEvidence:");
+            Console.WriteLine("\n|   |   |\n| -------- | - |\n| evidence | {0} |\n| log(evidence) | {1} |\n| geo_mean | {2} |\n", modelEvidence, logEvidence.ToString("E2"), geo_mean);
         }
 
         // Generates data from the model
